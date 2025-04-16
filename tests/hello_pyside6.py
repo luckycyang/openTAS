@@ -1,5 +1,6 @@
 import sys
 import random
+import PySide6
 from PySide6 import QtCore, QtWidgets, QtGui
 # Prints PySide6 version
 print(PySide6.__version__)

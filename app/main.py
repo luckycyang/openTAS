@@ -1,5 +1,5 @@
 class App():
-    def run():
+    def run(self):
         __import__('pprint').pprint("App is running")
 
 
