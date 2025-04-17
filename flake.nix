@@ -24,6 +24,7 @@
                   with ps; [
                     pyside6
                   ]))
+                uv
               ];
             };
           };
