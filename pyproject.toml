@@ -5,5 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "pyaudio>=0.2.14",
     "pyside6>=6.9.0",
+    "websockets>=15.0.1",
 ]
