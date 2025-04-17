@@ -34,7 +34,7 @@
               ];
 
               shellHook = ''
-                export QML2_IMPORT_PATH="${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
+                export QML_IMPORT_PATH="${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
               '';
             };
           };
