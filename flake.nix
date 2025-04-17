@@ -23,9 +23,19 @@
                 (python3.withPackages (ps:
                   with ps; [
                     pyside6
-                  ]))
+                  ]
+                ))
                 uv
+                pyright
+
+                # QT
+                qt6.qtbase
+                qt6.qtdeclarative
               ];
+
+              shellHook = ''
+                export QML2_IMPORT_PATH="${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
+              '';
             };
           };
         }
