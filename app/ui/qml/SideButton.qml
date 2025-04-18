@@ -2,15 +2,48 @@ import QtQuick
 import QtQuick.Layouts
 
 Rectangle {
-    property string text
-    
+    id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
-    color: "lightgrey"
+    color: "#f0f0f0"
+    // Override default state
+    state: selected ? "selected" : (hovered ? "hovered" : "normal")
+    states: [
+        State {
+            name: "normal"
+            PropertyChanges { target: root; color: "#f0f0f0" }
+        },
+        State {
+            name: "hovered"
+            PropertyChanges { target: root; color: "#d1d1d1" }
+        },
+        State {
+            name: "selected"
+            PropertyChanges { target: root; color: "#a0a0a0" }
+            PropertyChanges { target: leftBorder; visible: true }
+            PropertyChanges { target: buttonText; font.bold: true }
+        }
+    ]
+
+    property string text
+    property string targetQml
+    property bool hovered: false
+    property bool selected: false
+
 
     Text {
-        text: parent.text
+        id: buttonText
+        text: qsTr(parent.text)
         anchors.centerIn: parent
+    }
+
+    Rectangle {
+        id: leftBorder
+        anchors.left: parent.left
+        width: parent.width * 0.01
+        height: parent.height
+        color: "black"
+        visible: false
     }
 
     MouseArea {
@@ -18,12 +51,10 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
 
-        onEntered: {
-            parent.color = "grey"
-        }
-
-        onExited: {
-            parent.color = "lightgrey"
-        }
+        onEntered: root.hovered = true
+        onExited: root.hovered = false
+        onClicked: root.clicked()
     }
+
+    signal clicked()
 }
