@@ -3,11 +3,13 @@ import QtQuick.Controls
 
 ApplicationWindow {
     id: main
-    height: 400
-    width: 400
+    height: 800
+    width: 800
     visible: true
+    title: "OpenTAS"
 
-    Text {
-        text: "Hello QML"
+    Sidebar {
+        height: parent.height
+        width: parent.width * 0.3
     }
 }
