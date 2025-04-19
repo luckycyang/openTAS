@@ -36,7 +36,7 @@ Pane {
         }
         
         // Blank block at the bottom
-        Rectangle {
+        Item {
             Layout.preferredHeight: parent.height * 0.4
         }
     }

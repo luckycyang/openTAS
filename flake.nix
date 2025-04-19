@@ -23,6 +23,8 @@
                 (python3.withPackages (ps:
                   with ps; [
                     pyside6
+                    websockets
+                    pyaudio
                   ]
                 ))
                 uv

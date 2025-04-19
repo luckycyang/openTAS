@@ -6,7 +6,6 @@ Rectangle {
     Layout.fillWidth: true
     Layout.fillHeight: true
     color: "#f0f0f0"
-    // Override default state
     state: selected ? "selected" : (hovered ? "hovered" : "normal")
     states: [
         State {
