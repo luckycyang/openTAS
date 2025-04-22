@@ -180,6 +180,7 @@ class FunASR:
                 self.recorder.close()
             if self.websocket:
                 await self.websocket.close()
+            self._running = False
     
     def _run_thread(self, device_index: int):
         asyncio.run(self._run_async(device_index))
@@ -226,7 +227,9 @@ class FunASR:
 def test_funasr():
     setting = Setting(
         hotwords={"阿里巴巴": 20},
-        ssl_enable=False
+        ssl_enable=False,
+        rate=16000,
+        channels=1
     )
     
     recorder = Recorder(setting)
@@ -234,7 +237,7 @@ def test_funasr():
 
 
     device_index = int(input("请输入输入设备索引: "))
-    funasr = FunASR(setting, uri="ws://localhost:10095")
+    funasr = FunASR(setting, uri="ws://10.70.141.210:10095")
     funasr.start(device_index)
     
     
