@@ -1,25 +1,27 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 from PySide6.QtQml import QmlElement
 import pyaudio
+from srt_gen import SRTGenerator
 
-from funasr import FunASR, Setting
+from funasr import FunASR, Sentence, Setting
 
 QML_IMPORT_NAME = "bridge.stt"
 QML_IMPORT_MAJOR_VERSION = 1
 
-FORMAT_MAPPING = {
-    'Int8': pyaudio.paInt8,
-    'Int16': pyaudio.paInt16,
-    'Int24': pyaudio.paInt24,
-    'Int32': pyaudio.paInt32,
-    'Float32': pyaudio.paFloat32,
-    'UInt8': pyaudio.paUInt8
+AUDIO_FORMAT_MAPPING = {
+    0: pyaudio.paInt8,
+    1: pyaudio.paInt16,
+    2: pyaudio.paInt24,
+    3: pyaudio.paInt32,
+    4: pyaudio.paFloat32,
+    5: pyaudio.paUInt8
 }
 
 class SentenceReceiver(QObject):
-    new_arrived: Signal = Signal(str)
+    new_arrived: Signal = Signal(Sentence)
     finished: Signal = Signal()
+
     service: FunASR
     device_index: int
     timeout: float
@@ -37,7 +39,7 @@ class SentenceReceiver(QObject):
             sentence = self.service.get_sentence(self.timeout)
 
             if sentence:
-                self.new_arrived.emit(sentence.text)
+                self.new_arrived.emit(sentence)
 
         self.finished.emit()
 
@@ -46,43 +48,58 @@ class SentenceReceiver(QObject):
 
 @QmlElement
 class SttBridge(QObject):
-    data_receiver: SentenceReceiver
-    receiver_thread: QThread
+    receiver: SentenceReceiver
+    receiver_thread: Optional[QThread] = None
+    srt_generator: Optional[SRTGenerator] = None
+    output: str = ""
 
     received: Signal = Signal(str)
     serviceStopped: Signal = Signal()
-    
+
     @Slot(dict)
     def start(self, args: dict) -> None:
+        if self.receiver_thread and self.receiver_thread.isRunning():
+            self.serviceStopped.emit()
+            return
+        
+        self.output = ""
+        if args['srt']:
+            self.srt_generator = SRTGenerator()
+        
         setting = _prepare_setting(args)
         asr = FunASR(setting, args['server_address'])
 
         self.receiver_thread = QThread()
-        self.data_receiver = SentenceReceiver(
+        self.receiver = SentenceReceiver(
             asr, args['device_index'], args['timeout']
         )
-        self.data_receiver.moveToThread(self.receiver_thread)
+        self.receiver.moveToThread(self.receiver_thread)
 
-        self.data_receiver.new_arrived.connect(self.send_sentence)
-        self.receiver_thread.started.connect(self.data_receiver.run)
-        self.data_receiver.finished.connect(self._stop)
+        self.receiver.new_arrived.connect(self.store_and_send_sentence)
+        self.receiver_thread.started.connect(self.receiver.run)
+        self.receiver.finished.connect(self._stop)
 
         self.receiver_thread.start()
 
-    @Slot(str)
-    def send_sentence(self, s: str) -> None:
-        self.received.emit(s)
+    def store_and_send_sentence(self, s: Sentence) -> None:
+        to_be_sent = s.text + s.punc
+
+        if self.srt_generator:
+            self.srt_generator.add(s.start, s.end, s.text)
+        else:
+            self.output += to_be_sent
+        
+        self.received.emit(to_be_sent)
 
     def _stop(self) -> None:
         if self.receiver_thread:
-            self.data_receiver.stop()
+            self.receiver.stop()
             self.receiver_thread.quit()
-            self.receiver_thread.wait()
             self.serviceStopped.emit()
 
     @Slot()
     def stop(self) -> None:
-        self._stop()        
+        self._stop()
 
     @Slot(result=list)
     def send_microphone_infos(self) -> List[Dict]:
@@ -99,14 +116,17 @@ class SttBridge(QObject):
 
         return microphone_infos
 
-    @Slot(str, str)
-    def save_output(self, file_url: str, output: str) -> None:
+    @Slot(str)
+    def save_output(self, file_url: str) -> None:
         prefix = 'file://'
         if file_url.startswith(prefix):
             file_url = file_url.removeprefix(prefix)
 
-        with open(file_url, 'w') as file:
-            file.write(output)
+        if self.srt_generator:
+            self.srt_generator.save(file_url)
+        else:
+            with open(file_url, 'w') as file:
+                file.write(self.output)
 
 def _parse_hot_words(s: str) -> Dict[str, int]:
     ret = {}
@@ -121,7 +141,7 @@ def _parse_chunk_size(s: str) -> List[int]:
     return [int(s) for s in s.split(',')]
 
 def _prepare_setting(args: dict) -> Setting:
-    args['audio_format'] = FORMAT_MAPPING[args['audio_format']]
+    args['audio_format'] = AUDIO_FORMAT_MAPPING[args['audio_format']]
     args['hot_words'] = _parse_hot_words(args['hot_words'])
     args['chunk_size'] = _parse_chunk_size(args['chunk_size'])
 

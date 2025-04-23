@@ -28,6 +28,7 @@ Pane {
     property int channels
     property int rate
     property double timeout
+    property bool srt: false
 
     SttBridge { id: bridge }
 
@@ -41,6 +42,7 @@ Pane {
         function onServiceStopped() {
             startButton.enabled = true
             finishButton.enabled = false
+            outputFormatPicker.enabled = true
         }
     }
 
@@ -74,6 +76,7 @@ Pane {
         property alias channels: root.channels
         property alias rate: root.rate
         property alias timeout: root.timeout
+        property alias srt: root.srt
     }
 
     Column {
@@ -123,61 +126,13 @@ Pane {
                 }
             }
 
-            // Microphone picker
+            // Microphone picker and Itn
             ComboBox {
                 id: microphonePicker
                 model: root.microphoneNames
                 visible: root.useRecorder
 
                 onActivated: root.microphoneChosen = currentIndex
-            }
-        }
-        
-        // Audio options
-        RowLayout {
-            width: parent.width
-            
-            Text {
-                text: qsTr("Format")
-                visible: root.useRecorder
-            }
-
-            ComboBox {
-                id: formatPicker
-                model: [
-                    "Int8", "Int16", "Int24", "Int32",
-                    "Float32", "UInt8"
-                ]
-                visible: root.useRecorder
-                currentIndex: root.audioFormatChosen
-
-                onActivated: root.audioFormatChosen = currentIndex
-            }
-
-            Text {
-                text: qsTr("Channels")
-                visible: root.useRecorder
-            }
-
-            TextField {
-                text: root.channels
-                visible: root.useRecorder
-                validator: IntValidator {}
-
-                onTextChanged: root.channels = text
-            }
-
-            Text {
-                text: qsTr("Rate")
-                visible: root.useRecorder
-            }
-
-            TextField {
-                text: root.rate
-                visible: root.useRecorder
-                validator: IntValidator {}
-                
-                onTextChanged: root.rate = text
             }
                         
             // If not use microphone
@@ -196,9 +151,23 @@ Pane {
                 id: filePicker
                 onAccepted: root.recordFile = selectedFile
             }
+
+            // Delimiter
+            Rectangle {
+                Layout.preferredHeight: parent.height * 0.8
+                Layout.preferredWidth: parent.width * 0.007
+                color: "black"
+            }
+
+            CheckBox {
+                text: "Itn"
+                checked: root.itnEnable
+
+                onClicked: root.itnEnable = checked
+            }
         }
         
-        // Model mode and Itn
+        // Model mode
         RowLayout {
             width: parent.width * 0.95
             visible: root.useRecorder
@@ -227,19 +196,47 @@ Pane {
 
                 onClicked: root.asrMode = "offline"
             }
-
-            // Delimiter
-            Rectangle {
-                Layout.preferredHeight: parent.height * 0.8
-                Layout.preferredWidth: parent.width * 0.007
-                color: "black"
+        }
+        
+        // Audio options
+        RowLayout {
+            width: parent.width
+            
+            Text {
+                text: qsTr("Format")
             }
 
-            CheckBox {
-                text: "Itn"
-                checked: root.itnEnable
+            ComboBox {
+                id: formatPicker
+                model: [
+                    "Int8", "Int16", "Int24", "Int32",
+                    "Float32", "UInt8"
+                ]
+                currentIndex: root.audioFormatChosen
 
-                onClicked: root.itnEnable = checked
+                onActivated: root.audioFormatChosen = currentIndex
+            }
+
+            Text {
+                text: qsTr("Channels")
+            }
+
+            TextField {
+                text: root.channels
+                validator: IntValidator {}
+
+                onTextChanged: root.channels = text
+            }
+
+            Text {
+                text: qsTr("Rate")
+            }
+
+            TextField {
+                text: root.rate
+                validator: IntValidator {}
+                
+                onTextChanged: root.rate = text
             }
         }
 
@@ -306,6 +303,15 @@ Pane {
         }            
         
         RowLayout {
+            // Indicate the output format, plain text or srt
+            ComboBox {
+                id: outputFormatPicker
+                model: [qsTr("Plain text"), "Srt"]
+                currentIndex: root.srt ? 1 : 0
+
+                onActivated: root.srt = currentIndex === 1
+            }
+            
             Button {
                 id: startButton
                 text: qsTr("Start")
@@ -315,6 +321,7 @@ Pane {
                     enabled = false
                     finishButton.enabled = true
                     exportButton.enabled = false
+                    outputFormatPicker.enabled = false
                 
                     let info = root.microphones[root.microphoneChosen]
                 
@@ -327,8 +334,7 @@ Pane {
                         "asr_mode": root.asrMode,
                         "itn_enable": root.itnEnable,
                         "hot_words": root.hotWords,
-                        "audio_format":
-                            formatPicker.textAt(root.audioFormatChosen),
+                        "audio_format": root.audioFormatChosen,
                         "chunk_size": root.chunkSize,
                         "chunk_interval": root.chunkInterval,
                         "device_index":
@@ -337,6 +343,7 @@ Pane {
                         "channels": root.channels, 
                         "rate": root.rate,
                         "timeout": root.timeout,
+                        "srt": root.srt,
                     })
                 }
             }
@@ -371,7 +378,7 @@ Pane {
                 id: fileSaver
                 fileMode: FileDialog.SaveFile
 
-                onAccepted: bridge.save_output(selectedFile, root.output)
+                onAccepted: bridge.save_output(selectedFile)
                 onRejected: exportButton.enabled = true
             }
         }
