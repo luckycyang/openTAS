@@ -3,6 +3,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 from PySide6.QtQml import QmlElement
 import pyaudio
 from srt_gen import SRTGenerator
+from .utils import remove_file_url_prefix
 
 from funasr import FunASR, Sentence, Setting
 
@@ -43,6 +44,7 @@ class SentenceReceiver(QObject):
 
         self.finished.emit()
 
+    @Slot()
     def stop(self) -> None:
         self.service.stop()
 
@@ -55,6 +57,8 @@ class SttBridge(QObject):
 
     received: Signal = Signal(str)
     serviceStopped: Signal = Signal()
+    startingNewTask: Signal = Signal()
+    finished: Signal = Signal()
 
     @Slot(dict)
     def start(self, args: dict) -> None:
@@ -63,6 +67,7 @@ class SttBridge(QObject):
             return
         
         self.output = ""
+        self.startingNewTask.emit()
         if args['srt']:
             self.srt_generator = SRTGenerator()
         
@@ -78,6 +83,7 @@ class SttBridge(QObject):
         self.receiver.new_arrived.connect(self.store_and_send_sentence)
         self.receiver_thread.started.connect(self.receiver.run)
         self.receiver.finished.connect(self._stop)
+        self.finished.connect(self.receiver.stop)
 
         self.receiver_thread.start()
 
@@ -93,7 +99,7 @@ class SttBridge(QObject):
 
     def _stop(self) -> None:
         if self.receiver_thread:
-            self.receiver.stop()
+            self.finished.emit()
             self.receiver_thread.quit()
             self.serviceStopped.emit()
 
@@ -118,14 +124,12 @@ class SttBridge(QObject):
 
     @Slot(str)
     def save_output(self, file_url: str) -> None:
-        prefix = 'file://'
-        if file_url.startswith(prefix):
-            file_url = file_url.removeprefix(prefix)
+        file_path = remove_file_url_prefix(file_url)
 
         if self.srt_generator:
-            self.srt_generator.save(file_url)
+            self.srt_generator.save(file_path)
         else:
-            with open(file_url, 'w') as file:
+            with open(file_path, 'w') as file:
                 file.write(self.output)
 
 def _parse_hot_words(s: str) -> Dict[str, int]:

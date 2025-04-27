@@ -12,7 +12,7 @@ Pane {
     id: root
 
     property string output
-    property string serverAddress
+    property string sttServerAddress
     property string asrMode: "2pass"
     property bool itnEnable
     property bool useRecorder
@@ -44,6 +44,10 @@ Pane {
             finishButton.enabled = false
             outputFormatPicker.enabled = true
         }
+
+        function onStartingNewTask() {
+            root.output = ""
+        }
     }
 
     Component.onCompleted: {
@@ -64,7 +68,7 @@ Pane {
         id: settings
         category: "stt"
 
-        property alias serverAddress: root.serverAddress
+        property alias sttServerAddress: root.sttServerAddress
         property alias asrMode: root.asrMode
         property alias itnEnabled: root.itnEnable
         property alias useRecorder: root.useRecorder
@@ -101,9 +105,9 @@ Pane {
                 id: serverAddressInput
                 placeholderText: qsTr("Enter target server here")
                 Layout.fillWidth: true
-                text: root.serverAddress
+                text: root.sttServerAddress
 
-                onTextChanged: root.serverAddress = text
+                onTextChanged: root.sttServerAddress = text
             }
 
             CheckBox {
@@ -326,7 +330,7 @@ Pane {
                     let info = root.microphones[root.microphoneChosen]
                 
                     bridge.start({
-                        "server_address": root.serverAddress,
+                        "server_address": root.sttServerAddress,
                         "ssl_enable": root.sslEnable,
                         "use_recorder": root.useRecorder,
                         "record_file": !root.useRecorder ?

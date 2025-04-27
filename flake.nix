@@ -25,6 +25,7 @@
                     pyside6
                     websockets
                     pyaudio
+                    aiohttp
                   ]
                 ))
                 uv
