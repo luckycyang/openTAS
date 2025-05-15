@@ -8,8 +8,7 @@ from typing import Optional, Dict, List, Tuple, Deque
 from collections import deque
 import threading
 from queue import Queue
-
-# @TODO C-c can stop thread, i must use kill to stop it
+import signal
 
 @dataclass
 class Sentence:
@@ -155,7 +154,8 @@ class FunASR:
             else:
                 self.buffer_text = text
             
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"[错误] JSON 解析失败: {e}")
             pass
     
     async def _receive_messages(self):
@@ -214,7 +214,7 @@ class FunASR:
             return self.sentence_queue.get(timeout=timeout)
         except:
             return None
-    
+
     def get_buffer_text(self) -> str:
         """获取当前缓冲区文本（未完成的识别结果）"""
         return self.buffer_text
@@ -225,6 +225,7 @@ class FunASR:
 
 # 测试用例
 def test_funasr():
+
     setting = Setting(
         hotwords={"阿里巴巴": 20},
         ssl_enable=False,
@@ -237,12 +238,18 @@ def test_funasr():
 
 
     device_index = int(input("请输入输入设备索引: "))
-    funasr = FunASR(setting, uri="ws://10.70.141.210:10095")
+    funasr = FunASR(setting, uri="wss://localhost:10095")
     funasr.start(device_index)
-    
+    print("\n正在识别，按Ctrl+C停止识别")
+
+    def signal_handler(sig, frame):
+        print("\n[提示] 检测到中断信号，正在停止识别...")
+        funasr.stop()
+
+    signal.signal(signal.SIGINT, signal_handler)  
     
     try:
-        while True:
+        while funasr.is_running():
             sentence = funasr.get_sentence(timeout=1)
             if sentence:
                 print(f"[{sentence.mode}] {sentence.text}{sentence.punc} ({sentence.start}-{sentence.end}ms)")
@@ -251,10 +258,9 @@ def test_funasr():
             buffer_text = funasr.get_buffer_text()
             if buffer_text:
                 print(f"识别中: {buffer_text}", end='\r')
-    except KeyboardInterrupt:
-        pass
+        
     finally:
-        funasr.stop()
+        print("\n识别结束")
 # TEST
 def test_one():
     setting = Setting(

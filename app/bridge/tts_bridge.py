@@ -6,7 +6,7 @@ from PySide6.QtQml import QmlElement
 from .utils import remove_file_url_prefix
 import aiohttp
 
-from chattts import TTSClient, TTSRequest
+from ..chattts import TTSClient, TTSRequest
 
 QML_IMPORT_NAME = "bridge.tts"
 QML_IMPORT_MAJOR_VERSION = 1

@@ -2,10 +2,9 @@ from typing import Dict, List, Optional
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 from PySide6.QtQml import QmlElement
 import pyaudio
-from srt_gen import SRTGenerator
+from ..srt_gen import SRTGenerator
 from .utils import remove_file_url_prefix
-
-from funasr import FunASR, Sentence, Setting
+from ..funasr import FunASR, Sentence, Setting
 
 QML_IMPORT_NAME = "bridge.stt"
 QML_IMPORT_MAJOR_VERSION = 1
@@ -35,7 +34,7 @@ class SentenceReceiver(QObject):
 
     def run(self) -> None:
         self.service.start(self.device_index)
-
+        print("\nASR已启动")
         while self.service.is_running():
             sentence = self.service.get_sentence(self.timeout)
 

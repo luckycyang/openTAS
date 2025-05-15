@@ -12,22 +12,22 @@ Pane {
     id: root
 
     property string output
-    property string sttServerAddress
+    property string sttServerAddress: "wss://localhost:10095"
     property string asrMode: "2pass"
-    property bool itnEnable
+    property bool itnEnable: true
     property bool useRecorder
     property string recordFile
-    property string hotWords
+    property string hotWords: "阿里巴巴 20"
     property bool sslEnable
     property int audioFormatChosen
-    property string chunkSize
-    property int chunkInterval
+    property string chunkSize: "0,10,5"
+    property int chunkInterval: 10
     property var microphones
     property var microphoneNames
     property int microphoneChosen
-    property int channels
-    property int rate
-    property double timeout
+    property int channels: 1
+    property int rate: 16000
+    property double timeout: 1
     property bool srt: false
 
     SttBridge { id: bridge }

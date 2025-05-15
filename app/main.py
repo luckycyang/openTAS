@@ -2,7 +2,7 @@ import sys
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 
-from bridge import *
+from .bridge import *
 
 class App():
     qt_app: QGuiApplication
