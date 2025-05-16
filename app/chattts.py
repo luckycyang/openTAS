@@ -102,7 +102,7 @@ class TTSClient:
             return self.request
 
 async def main():
-    tts_client = TTSClient('http://10.70.140.111:9966')
+    tts_client = TTSClient('http://127.0.0.1:9966')
     
     # 使用 Builder 构建请求
     request = (TTSClient.Builder()

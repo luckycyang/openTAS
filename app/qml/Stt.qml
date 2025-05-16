@@ -19,7 +19,7 @@ Pane {
     property string recordFile
     property string hotWords: "阿里巴巴 20"
     property bool sslEnable
-    property int audioFormatChosen
+    property int audioFormatChosen: 1
     property string chunkSize: "0,10,5"
     property int chunkInterval: 10
     property var microphones

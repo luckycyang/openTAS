@@ -176,3 +176,4 @@ cython_debug/
 docker/
 .vscode/
 models/
+TTS_Server/
