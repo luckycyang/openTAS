@@ -1,6 +1,7 @@
 import sys
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtCore import QCoreApplication
 
 from .bridge import *
 
@@ -11,6 +12,9 @@ class App():
     def __init__(self) -> None:
         self.qt_app = QGuiApplication(sys.argv)
         self.engine = QQmlApplicationEngine()
+
+        QCoreApplication.setOrganizationName("OpenTAS")
+        QCoreApplication.setApplicationName("openTAS")
 
         self.engine.load('app/qml/Main.qml')
         self.engine.quit.connect(self.qt_app.exit)

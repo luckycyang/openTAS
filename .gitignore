@@ -177,3 +177,4 @@ docker/
 .vscode/
 models/
 TTS_Server/
+app/log.txt

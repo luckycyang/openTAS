@@ -2,8 +2,10 @@ from typing import Dict, List, Optional
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 from PySide6.QtQml import QmlElement
 import pyaudio
+import time
+
 from ..srt_gen import SRTGenerator
-from .utils import remove_file_url_prefix
+from .utils import remove_file_url_prefix, get_log_file_path
 from ..funasr import FunASR, Sentence, Setting
 
 QML_IMPORT_NAME = "bridge.stt"
@@ -59,6 +61,8 @@ class SttBridge(QObject):
     startingNewTask: Signal = Signal()
     finished: Signal = Signal()
 
+    taskFinished: Signal = Signal(str)
+
     @Slot(dict)
     def start(self, args: dict) -> None:
         if self.receiver_thread and self.receiver_thread.isRunning():
@@ -101,6 +105,14 @@ class SttBridge(QObject):
             self.finished.emit()
             self.receiver_thread.quit()
             self.serviceStopped.emit()
+            self.taskFinished.emit("STT Task finished at {}".format(time.strftime("%Y-%m-%d %H:%M:%S")))
+            self._write_log("STT Task finished")
+
+    def _write_log(self, message: str):
+        log_path = get_log_file_path()
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] {message}\n")
 
     @Slot()
     def stop(self) -> None:
