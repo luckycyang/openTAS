@@ -40,6 +40,7 @@ class DockerModel:
 
     def status(self) -> str:
         """获取容器状态：running/stopped/error"""
+        print("status:"+self.name)
         if self.is_running():
             return "running"
         else:
@@ -50,29 +51,42 @@ class DockerModel:
 class ModelManager:
     def __init__(self):
         self.models = {
-            "funasr": DockerModel("funasr"),
-            "chattts": DockerModel("chattts"),
-            # 可以添加更多模型
+            "stt": {
+                "funasr-online-server": DockerModel("funasr-online-server"),
+                # 可以在这里添加更多的 STT 模型
+            },
+            "tts": {
+                "chat-tts-ui": DockerModel("chat-tts-ui"),
+                # 可以在这里添加更多的 TTS 模型
+            }
         }
 
-    def get_all_model_names(self) -> list:
-        """返回所有注册模型的名字"""
-        return list(self.models.keys())
-    
-    def get_model_status(self, name: str) -> str:
-        model = self.models.get(name)
+    def add_model(self, model_type: str, name: str):
+        """动态添加新的模型"""
+        if model_type in self.models:
+            if name not in self.models[model_type]:
+                self.models[model_type][name] = DockerModel(name)
+                return True
+        return False
+
+    def get_all_model_names_by_type(self, model_type: str) -> list:
+        """根据类型返回所有注册的模型名称"""
+        return list(self.models.get(model_type, {}).keys())
+
+    def get_model_status(self, model_type: str, name: str) -> str:
+        model = self.models[model_type].get(name)
         if model:
             return model.status()
         return "unknown"
 
-    def start_model(self, name: str) -> bool:
-        model = self.models.get(name)
+    def start_model(self, model_type: str, name: str) -> bool:
+        model = self.models[model_type].get(name)
         if model:
             return model.start()
         return False
 
-    def stop_model(self, name: str) -> bool:
-        model = self.models.get(name)
+    def stop_model(self, model_type: str, name: str) -> bool:
+        model = self.models[model_type].get(name)
         if model:
             return model.stop()
         return False

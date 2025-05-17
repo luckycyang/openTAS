@@ -14,18 +14,26 @@ class ModelsBridge(QObject):
         super().__init__(parent)
         self.manager = ModelManager()
 
-    @Slot(result=list)
-    def getAllModels(self) -> list:
-        return self.manager.get_all_model_names()
+    @Slot(str, str)
+    def addModel(self, model_type: str, name: str):
+        success = self.manager.add_model(model_type, name)
+        if success:
+            print(f"[ModelsBridge] 成功添加模型: {model_type} - {name}")
+        else:
+            print(f"[ModelsBridge] 添加模型失败或已存在: {model_type} - {name}")
+    @Slot(str, result=list)
+    def getAllModelsByType(self, model_type: str) -> list:
+        print(f"getAllModelsByType: {model_type}")
+        return self.manager.get_all_model_names_by_type(model_type)
 
-    @Slot(str, result=str)
-    def getContainerStatus(self, name: str) -> str:
-        return self.manager.get_model_status(name)
+    @Slot(str, str, result=str)
+    def getContainerStatus(self, model_type: str, name: str) -> str:
+        return self.manager.get_model_status(model_type, name)
 
-    @Slot(str)
-    def startContainer(self, name: str):
-        self.manager.start_model(name)
+    @Slot(str, str)
+    def startContainer(self, model_type: str, name: str):
+        self.manager.start_model(model_type, name)
 
-    @Slot(str)
-    def stopContainer(self, name: str):
-        self.manager.stop_model(name)
+    @Slot(str, str)
+    def stopContainer(self, model_type: str, name: str):
+        self.manager.stop_model(model_type, name)
