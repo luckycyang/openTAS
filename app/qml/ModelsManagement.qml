@@ -1,37 +1,30 @@
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
+// ModelsManagement.qml
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-
-import bridge.models 1 
+import bridge.models 1
 
 Rectangle {
     anchors.fill: parent
+    color: "#ffffff"
 
-    function refreshModelList() {
-        // 清空现有模型
-        sttModelList.clear();
-        ttsModelList.clear();
-
-        // 重新加载 STT 模型
-        var sttNames = modelsBridge.getAllModelsByType("stt");
-        for (var i = 0; i < sttNames.length; i++) {
-            sttModelList.append({ "name": sttNames[i], "type": "stt"});
+    // 模型管理桥接实例
+    ModelsBridge {
+        id: modelsBridge
+        onStatusChanged: function(modelType, name, status) {
+            var model = (modelType === "stt" ? sttModelList : ttsModelList)
+            for (var i = 0; i < model.count; i++) {
+                if (model.get(i).name === name) {
+                    model.setProperty(i, "status", status)
+                    break
+                }
+            }
         }
-
-        // 重新加载 TTS 模型
-        var ttsNames = modelsBridge.getAllModelsByType("tts");
-        for (var i = 0; i < ttsNames.length; i++) {
-            ttsModelList.append({ "name": ttsNames[i], "type": "tts" });
-        }
-
-        console.log("刷新后的 STT 模型:", sttNames);
-        console.log("刷新后的 TTS 模型:", ttsNames);
     }
 
-    // 公共的委托组件
+    // 动态模型委托
     Component {
-        id: modelDelegate
+        id: dynamicModelDelegate
 
         Row {
             spacing: 20
@@ -39,88 +32,51 @@ Rectangle {
             
             Text {
                 text: "• " + (name || "未知")
-                width: 100
-                color: "black" // 强制颜色
+                width: 200
+                color: "black"
                 font.pixelSize: 14
             }
 
             Text {
                 id: statusText
-                text: "检查中..."
+                text: status === "running" ? "运行中" : 
+                     status === "stopped" ? "已停止" : 
+                     status === "created" ? "已创建" : "未知状态"
                 width: 80
-
-                function updateStatus() {
-                    var status = modelsBridge.getContainerStatus(model.type, name);
-                    statusText.text = status;
-                }
-
-                Component.onCompleted: {
-                    console.log("name:", name);
-                    updateStatus();
-                }
+                color: status === "running" ? "green" : 
+                       status === "stopped" ? "red" : "gray"
             }
 
             Row {
                 spacing: 10
-
                 Button {
                     text: "启动"
-                    onClicked: {
-                        modelsBridge.startContainer(model.type, name)
-                        statusText.updateStatus()
-                    }
+                    enabled: status !== "running"
+                    onClicked: modelsBridge.startContainer(type, name)
                 }
-
                 Button {
                     text: "停止"
-                    onClicked: {
-                        modelsBridge.stopContainer(model.type, name)
-                        statusText.updateStatus()
-                    }
+                    enabled: status === "running"
+                    onClicked: modelsBridge.stopContainer(type, name)
                 }
-
                 Button {
                     text: "刷新"
-                    onClicked: statusText.updateStatus()
+                    onClicked: {
+                        var newStatus = modelsBridge.getContainerStatus(type, name)
+                        // 状态更新会通过信号自动触发
+                    }
                 }
             }
         }
     }
 
-    ModelsBridge {
-        id: modelsBridge
-    }
-
+    // 动态数据模型
     ListModel {
         id: sttModelList
-        ListElement { name: "funasr-online-server-cpu"; type: "stt" }
-        ListElement { name: "whisper-cpu"; type: "stt" }
     }
 
     ListModel {
         id: ttsModelList
-        ListElement { name: "chat-tts-ui-cpu"; type: "tts" }
-        ListElement { name: "paddle-tts"; type: "tts" }
-    }
-
-    Component.onCompleted: {
-        // 加载 STT 模型
-        var sttNames = modelsBridge.getAllModelsByType("stt");
-        for (var i = 0; i < sttNames.length; i++) {
-            var modelName = sttNames[i];
-            print("sttNames:", sttNames)
-            sttModelList.append({ "name": modelName, "type": "stt" });
-        }
-
-        // 加载 TTS 模型
-        var ttsNames = modelsBridge.getAllModelsByType("tts");
-        for (var i = 0; i < ttsNames.length; i++) {
-            var modelName = ttsNames[i];
-            print("ttsNames:", ttsNames)
-            ttsModelList.append({ "name": modelName, "type": "tts" });
-        }
-        
-        
     }
 
     ColumnLayout {
@@ -131,11 +87,13 @@ Rectangle {
             text: "本地模型管理"
             font.bold: true
             font.pixelSize: 20
+            Layout.leftMargin: 20
         }
 
         Row {
             spacing: 10
             width: parent.width
+            Layout.leftMargin: 20
 
             ComboBox {
                 id: modelTypeComboBox
@@ -152,17 +110,12 @@ Rectangle {
             Button {
                 text: "添加模型"
                 onClicked: {
-                    var type = modelTypeComboBox.text;
-                    var name = modelNameInput.text;
+                    var type = modelTypeComboBox.text
+                    var name = modelNameInput.text
                     if (name) {
-                        modelsBridge.addModel(type, name);
-                        // 更新对应类型的列表
-                        if (type === "stt") {
-                            sttModelList.append({ "name": name, "type": "stt" });
-                        } else if (type === "tts") {
-                            ttsModelList.append({ "name": name, "type": "tts" });
-                        }
-                        modelNameInput.text = "";
+                        modelsBridge.addModel(type, name)
+                        modelNameInput.text = ""
+                        _refreshList(type)
                     }
                 }
             }
@@ -170,87 +123,91 @@ Rectangle {
             Button {
                 text: "刷新列表"
                 onClicked: {
-                    refreshModelList();
+                    _refreshAll()
                 }
             }
         }
 
-
+        // STT 模型列表
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
             Rectangle {
                 anchors.fill: parent
                 color: "#f0f0f0"
                 radius: 5
-
                 Column {
                     anchors.fill: parent
                     anchors.margins: 10
-
                     Text {
                         text: "STT 模型"
                         font.bold: true
                         font.pixelSize: 16
                     }
-
-                    Item {
+                    ListView {
                         width: parent.width
-                        height: parent.height
-
-                        ListView {
-                            clip: true
-                            model: sttModelList
-                            height: 100
-                            delegate: modelDelegate
-
-                            onContentHeightChanged: {
-                                console.log("STT 列表项数量:", count);
-                            }
-                        }
+                        height: 150
+                        model: sttModelList
+                        delegate: dynamicModelDelegate
+                        clip: true
                     }
                 }
             }
         }
 
+        // TTS 模型列表
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-
             Rectangle {
                 anchors.fill: parent
                 color: "#f0f0f0"
                 radius: 5
-
                 Column {
                     anchors.fill: parent
                     anchors.margins: 10
-                    spacing: 10
-
                     Text {
                         text: "TTS 模型"
                         font.bold: true
                         font.pixelSize: 16
                     }
-
-                    Item {
+                    ListView {
                         width: parent.width
-                        height: parent.height
-
-                        ListView {
-                            clip: true
-                            model: ttsModelList
-                            height: 100
-                            delegate: modelDelegate
-
-                            onContentHeightChanged: {
-                                console.log("TTS 列表项数量:", count);
-                            }
-                        }
+                        height: 150
+                        model: ttsModelList
+                        delegate: dynamicModelDelegate
+                        clip: true
                     }
                 }
             }
+        }
+    }
+
+    // 初始化加载数据
+    Component.onCompleted: {
+        _refreshAll()
+    }
+
+    // 刷新所有数据
+    function _refreshAll() {
+        _refreshList("stt")
+        _refreshList("tts")
+    }
+
+    // 刷新指定类型列表
+    function _refreshList(model_type) {
+        var model = (model_type === "stt" ? sttModelList : ttsModelList)
+        model.clear()
+        
+        var names = modelsBridge.getAllModelsByType(model_type)
+        for (var i = 0; i < names.length; i++) {
+            var name = names[i]
+            var status = modelsBridge.getContainerStatus(model_type, name)
+            model.append({
+                "name": name,
+                "type": model_type,
+                "status": status
+            })
         }
     }
 }
