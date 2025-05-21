@@ -36,7 +36,6 @@ class SentenceReceiver(QObject):
 
     def run(self) -> None:
         self.service.start(self.device_index)
-        print("\nASR已启动")
         while self.service.is_running():
             sentence = self.service.get_sentence(self.timeout)
 
@@ -85,7 +84,6 @@ class SttBridge(QObject):
 
         self.receiver.new_arrived.connect(self.store_and_send_sentence)
         self.receiver_thread.started.connect(self.receiver.run)
-        self.receiver.finished.connect(self._stop)
         self.finished.connect(self.receiver.stop)
 
         self.receiver_thread.start()
@@ -105,8 +103,17 @@ class SttBridge(QObject):
             self.finished.emit()
             self.receiver_thread.quit()
             self.serviceStopped.emit()
-            self.taskFinished.emit("STT Task finished at {}".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-            self._write_log("STT Task finished")
+            self.receiver.stop()
+            
+            # 构造日志消息
+            log_message = f"[STT] Task finished \n"
+            if self.output:
+                log_message += f"Transcribed text:\n{self.output}"  # 添加转换文本
+            if self.srt_generator:  # 新增SRT模式日志
+                log_message += f"生成字幕段数:\n{len(self.srt_generator.subtitles)}"
+            
+            self.taskFinished.emit(log_message)
+            self._write_log(log_message)  # 写入完整日志
 
     def _write_log(self, message: str):
         log_path = get_log_file_path()

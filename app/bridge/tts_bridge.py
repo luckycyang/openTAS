@@ -5,12 +5,18 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 from PySide6.QtQml import QmlElement
 import aiohttp
 import time
+import os
 
 from .utils import remove_file_url_prefix, get_log_file_path
 from ..chattts import TTSClient, TTSRequest
 
 QML_IMPORT_NAME = "bridge.tts"
 QML_IMPORT_MAJOR_VERSION = 1
+
+def _write_log(message: str):
+        log_path = get_log_file_path()
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"{message}\n")
 
 class TtsHandler(QObject):
     client: TTSClient
@@ -32,6 +38,9 @@ class TtsHandler(QObject):
                     "url": audio.url,
                 })
 
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        _write_log(f"[{timestamp}] [TTS] 已转换文本: {req.text}")
+
         self.finished.emit(audio_list)
 
     @Slot(TTSRequest)
@@ -40,7 +49,15 @@ class TtsHandler(QObject):
 
     @Slot(str, str)
     def download(self, url: str, file_path: str):
+        cleaned_path = remove_file_url_prefix(file_path)
+        if os.name == 'nt':  # Windows 系统
+            file_path = cleaned_path.lstrip("\\")
+        else:
+            file_path = cleaned_path  # 其他系统
         asyncio.run(_download(url, file_path))
+
+        # 写入日志
+        _write_log(f"[Download] 已下载文件至: {file_path}")
 
 @QmlElement
 class TtsBridge(QObject):
@@ -66,29 +83,22 @@ class TtsBridge(QObject):
             self.handler.moveToThread(self.handler_thread)
 
             self.started.connect(self.handler.run)
-            # self.handler.finished.connect(self.received)
+
             self.handler.finished.connect(lambda audio_list: (
                 self.received.emit(audio_list),
                 self.taskFinished.emit("TTS Task finished at {}".format(time.strftime("%Y-%m-%d %H:%M:%S"))),
-                self._write_log("TTS Task finished")
             ))
             self.startDownloading.connect(self.handler.download)
 
         self.handler_thread.start()
         self.started.emit(request)
-
-    def _write_log(self, message: str):
-        log_path = get_log_file_path()
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"[{timestamp}] {message}\n")
-
     @Slot(str, result=str)
     def import_text(self, file_url: str) -> str:
         file_path = remove_file_url_prefix(file_url)
-
+        if os.name == 'nt':
+            file_path = file_path.lstrip('\\')
         text = None
-        with open(file_path) as file:
+        with open(file_path, encoding='utf-8') as file:
             text = file.read()
 
         return text
@@ -129,5 +139,6 @@ async def _download(url: str, file_path: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:
+
                 path = Path(file_path)
                 path.write_bytes(await response.read())

@@ -1,3 +1,4 @@
+import os
 class SRTGenerator:
     def __init__(self):
         self.subtitles = []
@@ -10,6 +11,9 @@ class SRTGenerator:
         self.index += 1
 
     def save(self, filename):
+        print(f"Saving SRT file to {filename}")
+        if os.name == 'nt':
+            filename = filename.lstrip('\\')
         with open(filename, 'w', encoding='utf-8') as f:
             for index, start_time, end_time, text in self.subtitles:
                 f.write(f"{index}\n")

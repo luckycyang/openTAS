@@ -63,7 +63,13 @@ Rectangle {
                     text: "刷新"
                     onClicked: {
                         var newStatus = modelsBridge.getContainerStatus(type, name)
-                        // 状态更新会通过信号自动触发
+                    }
+                }
+                Button {
+                    text: "删除"
+                    onClicked: {
+                        modelsBridge.removeModel(type, name)
+                        _refreshList(type) // 删除后刷新列表
                     }
                 }
             }
@@ -110,9 +116,10 @@ Rectangle {
             Button {
                 text: "添加模型"
                 onClicked: {
-                    var type = modelTypeComboBox.text
+                    var type = modelTypeComboBox.model[modelTypeComboBox.currentIndex]
                     var name = modelNameInput.text
                     if (name) {
+                        console.log("添加模型: " + type + " " + name)
                         modelsBridge.addModel(type, name)
                         modelNameInput.text = ""
                         _refreshList(type)

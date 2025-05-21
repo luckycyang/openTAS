@@ -91,22 +91,19 @@ class ModelManager:
 
 
     def add_model(self, model_type: str, name: str):
-        if model_type in self.models:
-            # 增强容器有效性验证
-            if not self._is_valid_container(name, model_type):
-                return False
-            if name not in self.models[model_type]:
-                self.models[model_type][name] = DockerModel(name)
-                return True
-        return False
+        # 增强容器有效性验证
+        if not self._is_valid_container(name, model_type):
+            print(f"[ModelManager] 容器 {name} 不存在或无效")
+            return False
+        print(f"[ModelManager] 添加模型: {model_type} - {name}")
+        self.models[model_type][name] = DockerModel(name)
+        return True
+
     
     def _is_valid_container(self, name: str, expected_type: str) -> bool:
-        """验证容器是否符合命名规范且真实存在"""
+        """验证容器是否真实存在"""
         try:
-            # 检查容器命名规范（例如 stt- 或 tts- 前缀）
-            if not name.startswith(f"{expected_type}-"):
-                return False
-                
+            print(f"[ModelManager] 验证容器 {name} 是否存在")
             result = subprocess.run(
                 ["docker", "inspect", name],
                 stdout=subprocess.DEVNULL,
@@ -136,4 +133,12 @@ class ModelManager:
         model = self.models[model_type].get(name)
         if model:
             return model.stop()
+        return False
+    
+    def remove_model(self, model_type: str, name: str):
+        """从管理器中移除指定模型"""
+        if model_type in self.models and name in self.models[model_type]:
+            del self.models[model_type][name]
+            print(f"[ModelManager] 移除模型: {model_type} - {name}")
+            return True
         return False

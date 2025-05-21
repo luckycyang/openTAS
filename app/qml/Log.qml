@@ -13,20 +13,27 @@ Rectangle {
     LogBridge { id: logBridge }
     
     ListView {
+        id: listView
         anchors.fill: parent
         model: logModel
+        clip: true 
+
         delegate: Text {
             text: roleText
             padding: 8
-            width: parent.width
+            wrapMode: Text.Wrap
+            width: listView.width // 确保 Text 的宽度与 ListView 一致
         }
-    }
 
-    Timer {
-        id: refreshTimer
-        interval: 5000 // 每 5 秒刷新一次
-        repeat: true
-        onTriggered: loadLogs()
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded // 自动显示/隐藏
+            width: 16                   // 滚动条宽度
+            anchors.right: parent.right
+        }
+
+        // 添加滚动条交互支持
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: true
     }
 
     function loadLogs() {
@@ -41,6 +48,8 @@ Rectangle {
 
     Component.onCompleted: {
         loadLogs()
-        refreshTimer.start()
+            if (logModel.count > 0) {
+            listView.contentY = listView.contentHeight
+        }
     }
 }

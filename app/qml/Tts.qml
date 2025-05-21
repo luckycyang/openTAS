@@ -19,18 +19,18 @@ Pane {
             url: "example.com"
         }
     }
-    property string voice
+    property string voice: "11.pt"
     property int voiceValue
     property int textSeed
     property string prompt
     property bool skipRefine
     property int inferToken: 2048
     property int refineToken: 384
-    property int speed
-    property double temperature
-    property double topP
-    property double topK
-    property string ttsServerAddress
+    property int speed: 5
+    property double temperature: 0.1
+    property double topP: 0.701
+    property double topK: 20
+    property string ttsServerAddress: 'http://127.0.0.1:9966'
 
     TtsBridge { id: bridge }
 
@@ -51,6 +51,7 @@ Pane {
 
     Settings {
         id: settings
+        category: "tts"
 
         property alias voice: root.voice
         property alias voiceValue: root.voiceValue
@@ -303,6 +304,12 @@ Pane {
                 FileDialog {
                     id: outputPicker
                     fileMode: FileDialog.SaveFile
+                    defaultSuffix: "wav"  // 设置默认扩展名
+                    nameFilters: ["Wave files (*.wav)"]  // 限制文件类型
+
+                    currentFolder: Qt.resolvedUrl("../../output")
+
+                    currentFile: Qt.formatDateTime(new Date(), "yyyyMMdd_hhmmss") + ".wav"
 
                     onAccepted: bridge.export(url, selectedFile)
                 }

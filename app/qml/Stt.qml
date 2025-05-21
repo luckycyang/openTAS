@@ -381,7 +381,10 @@ Pane {
             FileDialog {
                 id: fileSaver
                 fileMode: FileDialog.SaveFile
-
+                defaultSuffix: "srt"  // 设置默认扩展名
+                nameFilters: ["Caption files (*.srt)"]  // 限制文件类型
+                currentFolder: Qt.resolvedUrl("../../output")
+                currentFile: Qt.formatDateTime(new Date(), "yyyyMMdd_hhmmss") + ".srt"
                 onAccepted: bridge.save_output(selectedFile)
                 onRejected: exportButton.enabled = true
             }

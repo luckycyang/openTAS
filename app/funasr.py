@@ -200,9 +200,28 @@ class FunASR:
     
     def stop(self):
         """停止识别"""
+        if not self._running:
+            return
+            
         self._running = False
+        
+        # 等待异步任务完成
+        if self.websocket:
+            try:
+                asyncio.run(self.websocket.close())
+            except:
+                pass
+        
+        # 关闭录音设备
+        if self.recorder:
+            self.recorder.close()
+            
+        # 等待线程结束    
         if self._thread:
-            self._thread.join(timeout=1)
+            self._thread.join(timeout=3)
+            if self._thread.is_alive():
+                # 如果线程仍在运行，可以记录警告日志
+                print("Warning: ASR thread did not terminate properly")
     
     def get_sentence(self, timeout: float = None) -> Optional[Sentence]:
         """

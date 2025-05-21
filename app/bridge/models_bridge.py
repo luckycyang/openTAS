@@ -92,14 +92,25 @@ class ModelsBridge(QObject):
         return success  # 返回操作结果
     @Slot(str, result=list)
     def getAllModelsByType(self, model_type: str) -> list:
-        print(f"getAllModelsByType: {model_type}")
         return self.manager.get_all_model_names_by_type(model_type)
 
     @Slot(str, str, result=str)
     def getContainerStatus(self, model_type: str, name: str) -> str:
         return self.manager.get_model_status(model_type, name)
 
-    # 在 ModelsBridge 类中添加信号
-    statusChanged = Signal(str, str, str)  # (model_type, name, status)
-
-    
+    @Slot(str, str)
+    def removeModel(self, model_type: str, name: str):
+        """从 ModelManager 中移除模型引用"""
+        try:
+            # 调用 ModelManager 的移除方法
+            success = self.manager.remove_model(model_type, name)
+            if success:
+                print(f"[ModelsBridge] 移除模型成功: {model_type} - {name}")
+                self.statusChanged.emit(model_type, name, "not_exist")  # 更新状态为不存在
+                return True
+            else:
+                print(f"[ModelsBridge] 移除模型失败: 模型 {name} 不存在")
+                return False
+        except Exception as e:
+            print(f"[ModelsBridge] 移除模型异常: {e}")
+            return False

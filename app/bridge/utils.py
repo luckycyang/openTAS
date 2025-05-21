@@ -1,11 +1,12 @@
 import os
+from pathlib import Path
 
 def remove_file_url_prefix(file_url: str) -> str:
         prefix = 'file://'
         if file_url.startswith(prefix):
             file_url = file_url.removeprefix(prefix)
 
-        return file_url
+        return str(Path(file_url))
 
 def get_log_file_path():
     project_root = os.path.dirname(os.path.dirname(__file__))  # opentas/
