@@ -3,6 +3,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot
 from PySide6.QtQml import QmlElement
 import pyaudio
 import time
+import os
 
 from ..srt_gen import SRTGenerator
 from .utils import remove_file_url_prefix, get_log_file_path
@@ -144,10 +145,13 @@ class SttBridge(QObject):
     def save_output(self, file_url: str) -> None:
         file_path = remove_file_url_prefix(file_url)
 
+        if os.name == 'nt':
+            file_path = file_path.lstrip('\\')
+
         if self.srt_generator:
             self.srt_generator.save(file_path)
         else:
-            with open(file_path, 'w') as file:
+            with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(self.output)
 
 def _parse_hot_words(s: str) -> Dict[str, int]:

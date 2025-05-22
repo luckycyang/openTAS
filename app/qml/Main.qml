@@ -12,6 +12,7 @@ ApplicationWindow {
     RowLayout {
         anchors.fill: parent
         
+        
         Sidebar {
             Layout.fillHeight: true
             Layout.preferredWidth: parent.width * 0.2

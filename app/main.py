@@ -1,5 +1,5 @@
-import sys
-from PySide6.QtGui import QGuiApplication
+import sys, os
+from PySide6.QtGui import QGuiApplication, QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import QCoreApplication
 

@@ -106,7 +106,8 @@ class TtsBridge(QObject):
     @Slot(str, str)
     def export(self, url: str, file_url: str):
         file_path = remove_file_url_prefix(file_url)
-        print(f'export {url} to {file_url}')
+        if os.name == 'nt':
+            file_path = file_path.lstrip('\\')
 
         self.startDownloading.emit(url, file_path)
 
